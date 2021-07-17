@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8"/>
+        <meta name="viewport" content="width=device-width,initial-scale=1"/>
+        <style type="text/css">
+            body {
+                background-color: black;
+                color: white;
+                font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+                font-size: 12px;
+                white-space: nowrap;
+            }
+            table {
+                white-space: nowrap;
+            }
+            button {
+                background-color: chartreuse;
+                color: black;
+                font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+                font-size: 12px;
+                font-weight: bold;
+            }
+            .left {
+                color: chartreuse;
+                font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+                padding: 0px 3px 0px 3px;
+            }
+            .right {
+                color: white;
+                font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+                padding: 0px 3px 0px 3px;
+            }
+            #main {
+                display: none;
+                width: 100%;
+                /* border-collapse: collapse; */
+                border-spacing: 0px;
+            }
+            .hours {
+                width: 260px;
+            }
+            #navbar {
+                background-color:rgb(0, 0, 49);
+                overflow: hidden;
+                position: fixed;
+                top: 0px;
+                left: 0px;
+                width: 100%;
+                height: 110px;
+            }
+            #results {
+                margin-top: 110px;
+                width: 100%;
+            }
+            #tableheaders {
+                /* background-color:rgb(0, 0, 49); */
+                width: 100%;
+            }
+            #tablebody {
+                width: 100%;
+            }
+            .info {
+                width: 1%;
+            }
+            .map {
+                width: 1%;
+            }
+            .head {
+                margin-left: 3px;
+                float: left;
+            }
+            td.info {
+                border-bottom: 1px solid white;
+                border-top: 1px solid white;
+                border-left: 1px solid white;
+                padding: 0px;
+                margin: 0px;
+            }
+            td.hours {
+                border-bottom: 1px solid white;
+                border-top: 1px solid white;
+                padding: 0px;
+                margin: 0px;
+            }
+            td.map {
+                border-bottom: 1px solid white;
+                border-top: 1px solid white;
+                border-right: 1px solid white;
+                padding: 0px;
+                margin: 0px;
+            }
+            th.info {
+                padding: 0px;
+                margin: 0px;
+                background-color: black;
+                top: 110px;
+                left: 0px;
+                position: sticky;
+                height: 25px;
+            }
+            th.hours {
+                padding: 0px;
+                margin: 0px;
+                background-color: black;
+                top: 110px;
+                left: 0px;
+                position: sticky;
+                height: 25px;
+            }
+            th.map {
+                padding: 0px;
+                margin: 0px;
+                background-color: black;
+                top: 110px;
+                left: 0px;
+                position: sticky;
+                height: 25px;
+            }
+            label {
+                padding-right: 5px;
+                font-size: 16px;
+                font-weight: bold;
+                float: right;
+            }
+            #main {
+                width: 100%;
+                overflow-y: scroll;
+                overflow-x: scroll;
+            }
+        </style>
+        <script src="https://code.jquery.com/jquery-3.6.0.js" integrity="sha256-H+K7U5CnXl1h5ywQfKtSj8PCmoN9aaq30gDh27Xc0jk=" crossorigin="anonymous"></script>
+        <script async src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCZpstuo1hvbPo6FKFTUr1r0dZbec8vW-g&libraries=places"></script>
+        <script type="application/javascript">
+            var service;
+            var infowindow;
+            var r = 0;
+            var ii = 2;
+            var coords_lat = "";
+            var coords_lng = "";
+            var myCoords = "";
+            var latlng = {lat: "",lng: ""};
+            var canvas_interval = "";
+            function loading_anim(){
+                var canvas = document.getElementById("cnvs");
+                var w = 400;
+                canvas_interval = setInterval(function(){
+                    canvas.width = w;
+                    var ctx = canvas.getContext("2d");
+                    ctx.clearRect(0,0,canvas.width,canvas.height);
+                    ctx.beginPath();
+                    ctx.fillStyle = "#7FFF00";
+                    ctx.fillRect(ii, 0, 40, 20);
+                    ctx.stroke();
+                    ii = ii + 2;
+                    if(ii >= w){ ii = 2; };
+                },10);
+            }
+            function get_coords(p){
+                setTimeout(()=>{
+                    coords_lat = p.coords.latitude + 0.008258641664184552;
+                    coords_lng = p.coords.longitude + 0.00919668671909335;
+                    latlng.lat = coords_lat;
+                    latlng.lng = coords_lng;
+                    myCoords = coords_lat + "," + coords_lng;
+                    var geocoder = new google.maps.Geocoder();
+                    geocoder.geocode({location: latlng}).then((response)=>{
+                        if(response.results[0]){
+                            var adr = response.results[0].address_components;
+                            var street_number = adr.filter((a)=>{return (a.types.indexOf("street_number") != -1);})[0].short_name;
+                            var street_name = adr.filter((a)=>{return (a.types.indexOf("route") != -1);})[0].short_name;
+                            var city = adr.filter((a)=>{return (a.types.indexOf("locality") != -1);})[0].short_name;
+                            var state = adr.filter((a)=>{return (a.types.indexOf("administrative_area_level_1") != -1);})[0].short_name;
+                            var zip_code = adr.filter((a)=>{return (a.types.indexOf("postal_code") != -1);})[0].short_name;
+                            var loc_address = street_number + " " + street_name + ", " + city + ", " + state + " " + zip_code;
+                            document.getElementById("currentlocation").innerHTML = loc_address;
+                            document.getElementById("locationrow").style.display = "table-row";
+                            geo_res = response;
+                        }
+                    });
+                },500);
+            }
+            var distanceMatrix = "";
+            var pagin = 1;
+            function FindNearby() {
+                if(document.body.getElementsByClassName("mainrow")){
+                    [...document.body.getElementsByClassName("mainrow")].forEach((i)=>{
+                        document.getElementById("tablebody").removeChild(i);
+                    });
+                }
+                loading_anim();
+                distanceMatrix = new google.maps.DistanceMatrixService();
+                var keyword = document.getElementById("searchbox").value.replace(" ","|");
+                var g_loc = new google.maps.LatLng(coords_lat,coords_lng);
+                var request = {
+                    location: g_loc,
+                    radius: 32187,
+                    keyword: keyword
+                }
+                service = new google.maps.places.PlacesService(document.createElement('div'));
+                service.nearbySearch(request, callback);
+            }
+            function callback(results, status, pagination) {
+                if (status == google.maps.places.PlacesServiceStatus.OK) {
+                    for (var i = 0; i < results.length; i++) {
+                        MakeRow(results[i]);
+                    }
+                    if (pagination && pagination.hasNextPage) {
+                        pagin++
+                        console.log("page: " + pagin);
+                        //pag = pagination;
+                        setTimeout(()=>{
+                            pagination.nextPage();
+                        },2000);
+                    } else {
+                        console.log("page " + pagin + " is the last page");
+                        clearInterval(canvas_interval);
+                        document.getElementById("loading").style.display = "none";
+                        document.getElementById("sort").style.display = "table-row";
+                        document.getElementById("searchbox").blur();
+                        document.getElementById("results").focus();
+                    }
+                }
+            }
+            var sorted_by = "distance";
+            var sorted_direction = "ascending";
+            var column_index = 7;
+            var ii = 0;
+            var canvas_interval;
+            var distance_ = 0;
+            function defer(method,condition){
+                if(condition){
+                    method()
+                } else {
+                    setTimeout(()=>{defer(method,condition);},100);
+                }
+            }
+            function isIterable(obj) {
+                if (obj == null) {
+                    return false;
+                }
+                return typeof obj[Symbol.iterator] === 'function';
+            }
+            function sortTable() {
+                var prev_sorted_by = sorted_by;
+                switch(column_index){
+                    case 7:
+                        sorted_by = "score";
+                        break;
+                    case 5:
+                        sorted_by = "distance";
+                        break;
+                    case 6:
+                        sorted_by = "avgrating";
+                        break;
+                    default:
+                        sorted_by = "distance"
+                        break;
+                }
+                if(sorted_direction == ""){
+                    sorted_direction = "ascending";
+                }
+                var table, rows, switching, i, x, y, shouldSwitch;
+                table = document.getElementById("tickers");
+                switching = true;
+                while (switching) {
+                    switching = false;
+                    rows = table.rows;
+                    for (i = 1; i < (rows.length - 1); i++) {
+                        shouldSwitch = false;
+                        x = parseFloat(rows[i].getElementsByTagName("TD")[column_index].innerHTML);
+                        y = parseFloat(rows[i + 1].getElementsByTagName("TD")[column_index].innerHTML);
+                        if(sorted_direction == "descending"){
+                            if (x < y) {
+                                shouldSwitch = true;
+                                break;
+                            }
+                        } else {
+                            if(x > y){
+                                shouldSwitch = true;
+                                break;
+                            }
+                        }
+                    }
+                    if (shouldSwitch) {
+                        rows[i].parentNode.insertBefore(rows[i + 1], rows[i]);
+                        switching = true;
+                    }
+                }
+            }
+            function sortTable_onclick() {
+                var prev_sorted_by = sorted_by;
+                switch(column_index){
+                    case 7:
+                        sorted_by = "score";
+                        break;
+                    case 5:
+                        sorted_by = "distance";
+                        break;
+                    case 6:
+                        sorted_by = "avgrating";
+                        break;
+                    default:
+                        sorted_by = "distance";
+                        break;
+                }
+                if(sorted_direction == ""){
+                    sorted_direction = "ascending";
+                } else {
+                    if(prev_sorted_by == sorted_by){
+                        if(sorted_direction == "descending"){
+                            sorted_direction = "ascending";
+                        } else {
+                            sorted_direction = "descending";
+                        }
+                    } else {
+                        sorted_direction = "ascending";
+                    }
+                }
+                var table, rows, switching, i, x, y, shouldSwitch;
+                table = document.getElementById("main");
+                switching = true;
+                while (switching) {
+                    switching = false;
+                    rows = document.getElementsByClassName("mainrow");
+                    for (i = 0; i < (rows.length - 1); i++) {
+                        shouldSwitch = false;
+                        x = parseFloat([...rows[i].children][column_index].innerHTML);
+                        y = parseFloat([...rows[i + 1].children][column_index].innerHTML);
+                        if(sorted_direction == "descending"){
+                            if (x < y) {
+                                shouldSwitch = true;
+                                break;
+                            }
+                        } else {
+                            if(x > y){
+                                shouldSwitch = true;
+                                break;
+                            }
+                        }
+                    }
+                    if (shouldSwitch) {
+                        rows[i].parentNode.insertBefore(rows[i + 1], rows[i]);
+                        switching = true;
+                    }
+                }
+            }
+            function score_onclick(){
+                column_index = 7;
+                sortTable_onclick();
+                var active = document.getElementById("sbs");
+                if(sorted_direction == "descending"){
+                    active.innerHTML = "Score &darr;";
+                } else {
+                    active.innerHTML = "Score &uarr;";
+                }
+                active.style.backgroundColor = "purple";
+                active.style.color = "white";
+                ['sbd','sbr'].forEach((i)=>{
+                    var ele = document.getElementById(i);
+                    ele.style.backgroundColor = "chartreuse";
+                    ele.style.color = "black";
+                    switch(i){
+                        case "sbs":
+                            ele.innerHTML = "Distance";
+                            break;
+                        case "sbr":
+                            ele.innerHTML = "Rating";
+                            break;
+                    }
+                });
+            }
+            function distance_onclick(){
+                column_index = 5;
+                sortTable_onclick();
+                var active = document.getElementById("sbd");
+                if(sorted_direction == "descending"){
+                    active.innerHTML = "Distance &darr;";
+                } else {
+                    active.innerHTML = "Distance &uarr;";
+                }
+                active.style.backgroundColor = "purple";
+                active.style.color = "white";
+                ['sbs','sbr'].forEach((i)=>{
+                    var ele = document.getElementById(i);
+                    ele.style.backgroundColor = "chartreuse";
+                    ele.style.color = "black";
+                    switch(i){
+                        case "sbs":
+                            ele.innerHTML = "Score";
+                            break;
+                        case "sbr":
+                            ele.innerHTML = "Rating";
+                            break;
+                    }
+                });
+            }
+            function rating_onclick(){
+                column_index = 6;
+                sortTable_onclick();
+                var active = document.getElementById("sbr");
+                if(sorted_direction == "descending"){
+                    active.innerHTML = "Rating &darr;";
+                } else {
+                    active.innerHTML = "Rating &uarr;";
+                }
+                active.style.backgroundColor = "purple";
+                active.style.color = "white";
+                ['sbs','sbd'].forEach((i)=>{
+                    var ele = document.getElementById(i);
+                    ele.style.backgroundColor = "chartreuse";
+                    ele.style.color = "black";
+                    switch(i){
+                        case "sbs":
+                            ele.innerHTML = "Score";
+                            break;
+                        case "sbd":
+                            ele.innerHTML = "Distance";
+                            break;
+                    }
+                });
+            }
+            function MakeHoursTable(weekday_text){
+                var hours_table = document.createElement("table");
+                hours_table.classList.add("hours");
+                var colgroup = document.createElement("colgroup");
+                for(var i = 0; i < 2; i++){
+                    var col = document.createElement("col");
+                    colgroup.appendChild(col);
+                }
+                var tbody = document.createElement("tbody");
+                weekday_text.forEach((i)=>{
+                    var row = document.createElement("tr");
+                    var td1 = document.createElement("td");
+                    td1.classList = "left";
+                    var td2 = document.createElement("td");
+                    td2.classList = "right";
+                    td1.innerHTML = i.split(':')[0];
+                    var split = [];
+                    for(var a = 1; a < i.split(':').length; a++){
+                        split.push(i.split(':')[a]);
+                    }
+                    td2.innerHTML = split.join(':');
+                    row.appendChild(td1);
+                    row.appendChild(td2);
+                    tbody.appendChild(row);
+                });
+                hours_table.appendChild(tbody);
+                return hours_table;
+            }
+            function gplace_callback(result){
+                var request = {
+                    placeId: result.place_id,
+                    fields: ['address_component','adr_address','business_status','formatted_address','geometry','icon','name','photo','place_id','plus_code','type','url','utc_offset_minutes','vicinity','formatted_phone_number','international_phone_number','opening_hours','website']
+                };
+                service.getDetails(request, (gplace,status)=>{
+                    if (status == google.maps.places.PlacesServiceStatus.OK){
+                        dmatrix_callback(result,gplace);
+                    }
+                });
+            }
+            function dmatrix_callback(result,gplace){
+                if(gplace.business_status == "OPERATIONAL"){
+                    var orig_latlng = new google.maps.LatLng(coords_lat,coords_lng);
+                    var dest_latlng = new google.maps.LatLng(parseFloat(result.geometry.location.lat()),parseFloat(result.geometry.location.lng()));
+                    distanceMatrix.getDistanceMatrix({
+                        origins: [orig_latlng],
+                        destinations: [dest_latlng],
+                        travelMode: 'WALKING',
+                        unitSystem: google.maps.UnitSystem.IMPERIAL
+                    },(response,status)=>{
+                        if(status == 'OK'){
+                            r++
+                            var row = document.createElement("tr");
+                            row.classList.add("mainrow");
+                            row.id = "row_" + r;
+                            var destination = result.geometry.location.lat() + "," + result.geometry.location.lng();
+                            var score = 0;
+                            var webpage = "";
+                            var dist_json = response;
+                            var store_hours = "";
+                            if(dist_json.rows[0].elements[0].status == 'OK'){
+                                var dist = (parseFloat(dist_json.rows[0].elements[0].distance.value) * 0.000621371).toFixed(2);
+                                distance_ = dist;
+                            } else {
+                                var dist = 0;
+                                distance_ = 0;
+                            }
+                            for(var i = 0; i < 10; i++){
+                                var td = document.createElement("td");
+                                switch(i){
+                                    case 0:
+                                        var ah = document.createElement("a");
+                                        ah.href = "https://www.google.com/maps/search/?api=1&query=Google&query_place_id=" + result.place_id;
+                                        ah.setAttribute("target","_blank");
+                                        ah.innerHTML = gplace.formatted_address;
+                                        score = parseFloat(result.user_ratings_total) * parseFloat(result.rating);
+                                        if(!gplace.website){
+                                            webpage = gplace.url;
+                                        } else {
+                                            webpage = gplace.website;
+                                        }
+                                        var ph = document.createElement("a");
+                                        if(typeof(gplace.international_phone_number) != "undefined"){
+                                            ph.href = "tel://" + gplace.international_phone_number.match(/\d*/g).filter((a)=>{ return (a.match(/\d+/));}).join('');
+                                            ph.setAttribute("target","_blank");
+                                            ph.innerHTML = gplace.formatted_phone_number;
+                                        }
+                                        var row_labels = [
+                                            "Name",
+                                            "Address",
+                                            "Distance",
+                                            "Rating",
+                                            "Total Ratings",
+                                            "Rating Score",
+                                            "WebPage",
+                                            "Phone Number"
+                                        ];
+                                        var row_items = [
+                                            {"Name": result.name},
+                                            {"Address": ah},
+                                            {"Distance": dist + " mi"},
+                                            {"Rating": result.rating},
+                                            {"Total Ratings": result.user_ratings_total},
+                                            {"Rating Score": score},
+                                            {"WebPage": webpage},
+                                            {"Phone Number": ph}
+                                        ];
+                                        td.classList.add("info");
+                                        var infotable = document.createElement("table");
+                                        infotable.classList.add("infotable");
+                                        var colgroup = document.createElement("colgroup");
+                                        for(var a = 0; a < 2; a++){
+                                            var col = document.createElement("col");
+                                            colgroup.appendChild(col);
+                                        }
+                                        infotable.appendChild(colgroup);
+                                        var tbody = document.createElement("tbody");
+                                        for(var a = 0; a < row_items.length; a++){
+                                            var tr = document.createElement("tr");
+                                            for(var b = 0; b < 2; b++){
+                                                var td0 = document.createElement("td");
+                                                switch(b){
+                                                    case 0:
+                                                        td0.classList.add("left");
+                                                        td0.innerHTML = row_labels[a];
+                                                        break;
+                                                    case 1:
+                                                        td0.classList.add("right");
+                                                        switch(a){
+                                                            case 0:
+                                                                td0.innerHTML = row_items[a].Name
+                                                                break;
+                                                            case 1:
+                                                                td0.appendChild(row_items[a].Address);
+                                                                break;
+                                                            case 2:
+                                                                td0.innerHTML = row_items[a].Distance;
+                                                                break;
+                                                            case 3:
+                                                                td0.innerHTML = row_items[a].Rating;
+                                                                break;
+                                                            case 4:
+                                                                td0.innerHTML = row_items[a]["Total Ratings"];
+                                                                break;
+                                                            case 5:
+                                                                td0.innerHTML = parseFloat(row_items[a]["Rating Score"]).toFixed(2);
+                                                                break;
+                                                            case 6:
+                                                                var w = document.createElement("a");
+                                                                w.href = row_items[a].WebPage.replace("http:","https:");
+                                                                w.innerHTML = "click here";
+                                                                w.setAttribute("title",row_items[a].WebPage.replace("http:","https:"));
+                                                                w.setAttribute("target","_blank");
+                                                                td0.appendChild(w);
+                                                                break;
+                                                            case 7:
+                                                                td0.appendChild(row_items[a]["Phone Number"]);
+                                                                break;
+                                                        }
+                                                        break;
+                                                }
+                                                tr.appendChild(td0);
+                                            }
+                                            tbody.appendChild(tr);
+                                        }
+                                        infotable.appendChild(tbody);
+                                        td.appendChild(infotable);
+                                        row.appendChild(td);
+                                        break;
+                                    case 1:
+                                        td.classList.add("hours");
+                                        defer(function(){
+                                            store_hours = MakeHoursTable(gplace.opening_hours.weekday_text);
+                                            td.appendChild(store_hours);
+                                        },(typeof(gplace.opening_hours) != "undefined"));
+                                        row.appendChild(td);
+                                        break;
+                                    case 2:
+                                        td.classList.add("map");
+                                        var map_link = document.createElement("a");
+                                        map_link.href = "https://www.google.com/maps/search/?api=1&query=Google&query_place_id=" + result.place_id;
+                                        map_link.setAttribute("target","_blank");
+                                        map_link.setAttribute("title","https://www.google.com/maps/search/?api=1&query=Google&query_place_id=" + result.place_id)
+                                        var img = document.createElement("img")
+                                        img.setAttribute("height",200);
+                                        img.setAttribute("width","auto");
+                                        img.src = "https://maps.googleapis.com/maps/api/staticmap?center=" + destination + "&zoom=14&size=400x400&maptype=roadmap&markers=color:red%7Clabel:" + encodeURIComponent(gplace.formatted_address) + "%7C" + destination + "&key=AIzaSyCZpstuo1hvbPo6FKFTUr1r0dZbec8vW-g";
+                                        map_link.appendChild(img);
+                                        td.appendChild(map_link);
+                                        row.appendChild(td);
+                                        break;
+                                    case 3:
+                                        td.classList.add("address");
+                                        td.innerHTML = gplace.formatted_address;
+                                        row.appendChild(td);
+                                        break;
+                                    case 4:
+                                        td.classList.add("coords");
+                                        td.innerHTML = destination;
+                                        row.appendChild(td)
+                                        break;
+                                    case 5:
+                                        td.classList.add("distance");
+                                        td.innerHTML = dist;
+                                        row.appendChild(td);
+                                        break;
+                                    case 6:
+                                        td.classList.add("avgrating");
+                                        td.innerHTML = result.rating;
+                                        row.appendChild(td);
+                                        break;
+                                    case 7:
+                                        td.classList.add("score");
+                                        td.innerHTML = score;
+                                        row.appendChild(td);
+                                        break;
+                                    case 8:
+                                        td.classList.add("numratings");
+                                        td.innerHTML = result.user_ratings_total;
+                                        row.appendChild(td);
+                                        break;
+                                    case 9:
+                                        td.classList.add("webpage");
+                                        td.innerHTML = webpage;
+                                        row.appendChild(td);
+                                        break;
+                                }
+                            }
+                        }
+                        document.getElementById("tablebody").appendChild(row);
+                        document.getElementById("count").innerHTML = [...document.body.getElementsByClassName("mainrow")].length + " results";
+                        hideExtraData();
+                        if(document.getElementById("main").style.display != "table"){
+                            document.getElementById("main").style.display = "table";
+                            document.getElementById("main").offsetLeft = "0px";
+                        }
+                    });
+                }
+            }
+            function MakeRow(result){
+                gplace_callback(result);
+            }
+            var all_results = [];
+            function hideExtraData(){
+                var theads = [
+                    "address",
+                    "coords",
+                    "distance",
+                    "avgrating",
+                    "score",
+                    "numratings",
+                    "webpage"
+                ];
+                [...document.body.getElementsByTagName("th")].filter(function(a){ return (theads.indexOf(a.className) != -1);}).forEach((i)=>{
+                    i.style.cssText = "display: none;";
+                });
+                theads.forEach((i)=>{
+                    [...document.body.getElementsByClassName(i)].forEach((a)=>{
+                        a.style.cssText = "display: none;";
+                    });
+                });
+            }
+            document.addEventListener("DOMContentLoaded",()=>{
+                document.getElementById("results").addEventListener("focus",()=>{
+                    window.scrollTo(0, 0);
+                    document.body.scrollTop = 0;
+                });
+                setTimeout(()=>{
+                    navigator.geolocation.getCurrentPosition(get_coords);
+                },1000);
+                var sb = document.getElementById("searchbox");
+                sb.focus();
+                setTimeout(function () { sb.focus(); }, 1);
+                document.getElementById("searchbox").onkeyup = function(event){
+                    if(event.keyCode == 13){
+                        FindNearby();
+                    }
+                }
+            });
+            var geo_res = "";
+        </script>
+    </head>
+    <body>
+        <div id="navbar">
+            <table>
+                <colgroup>
+                    <col style="padding-right: 5px;"/>
+                    <col style="padding-right: 5px;"/>
+                    <col/>
+                </colgroup>
+                <tr id="searchrow">
+                    <td><label for="searchbox">Find local: </label></td>
+                    <td>
+                        <input tabindex="1" style="width: 95%;" type="text" name="searchbox" id="searchbox">
+                    </td>
+                    <td><button name="submitsearch" id="submitsearch" onclick="FindNearby();">Submit</button></td>
+                </tr>
+                <tr id="locationrow" style="display: none;">
+                    <td style="vertical-align: bottom;"><label for="currentlocation">Near: </span></td>
+                    <td style="vertical-align: bottom;"><span style="color: chartreuse; font-size: 16px;" id="currentlocation"></span></td>
+                    <td></td>
+                </tr>
+                <tr id="sort" style="display: none;">
+                    <td><label for="sorterbuttons">Sort by: </span></td>
+                    <td id="sorterbuttons">
+                        <button id="sbs" onclick="score_onclick();">Score</button>
+                        <button id="sbd" onclick="distance_onclick();">Distance</button>
+                        <button id="sbr" onclick="rating_onclick();">Rating</button>
+                    </td>
+                    <td><span id="count"></span></td>
+                </tr>
+            </table>
+            <div id="loading">
+                <canvas style="z-index: 1; position: fixed; top: 53px; left: 2px; height: 20px; width: 400px;" height="20" width="400" id="cnvs"></canvas>
+            </div>
+        </div>
+        <div id="results" tabindex="2">
+            <table id="main" cellpadding="0" cellspacing="0">
+                <colgroup>
+                    <col/>
+                    <col/>
+                    <col/>
+                    <col/>
+                    <col/>
+                    <col/>
+                    <col/>
+                    <col/>
+                    <col/>
+                    <col/>
+                </colgroup>
+                <tbody id="tablebody">
+                    <tr id="tableheaders">
+                        <th style="border-left: 1px solid white; border-top: 1px solid white; border-bottom: 1px solid white;" class="info"><span class="head">INFO</span></th>
+                        <th style="border-left: 1px solid white; border-top: 1px solid white; border-bottom: 1px solid white;" class="hours"><span class="head">HOURS</span></th>
+                        <th style="border-left: 1px solid white; border-top: 1px solid white; border-bottom: 1px solid white; border-right: 1px solid white;" class="map"><span class="head">MAP</span></th>
+                        <th class="address"><span class="head">ADDRESS</span></th>
+                        <th class="coords"><span class="head">COORDINATES</span></th>
+                        <th class="distance"><span class="head">DISTANCE</span></th>
+                        <th class="avgrating"><span class="head">RATING</span></th>
+                        <th class="score"><span class="head">SCORE</span></th>
+                        <th class="numratings"><span class="head">AMOUNT OF RATINGS</span></th>
+                        <th class="webpage"><span class="head">WEBPAGE</span></th>
+                        <th class="filler"><span class="head"></span></th>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        <div id="container" style="display: none;">
+            <div id="map"></div>
+            <div id="sidebar">
+                <h2>Results</h2>
+                <ul id="places"></ul>
+                <button id="more">Load more results</button>
+            </div>
+        </div>
+    </body>
+</html>
