@@ -130,6 +130,61 @@
                 overflow-y: scroll;
                 overflow-x: scroll;
             }
+            #correct_address {
+                width: 100%;
+                overflow: hidden;
+                resize: none;
+                background-color:rgb(0, 18, 97);
+                color: white;
+                font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+                font-size: 12px;
+            }
+            .modal {
+                display: none;
+                position: fixed;
+                z-index: 1;
+                padding-top: 100px;
+                left: 0;
+                top: 0;
+                width: 50%;
+                height: 100%;
+                overflow: auto;
+                background-color: black;
+                background-color: rgba(0, 0, 0, 0.4);
+            }
+            .modal-content {
+                background-color: black;
+                color: white;
+                margin: auto;
+                padding: 20px;
+                border: 1px solid #888;
+                width: 80%;
+            }
+            #correct:hover {
+                cursor: pointer;
+                text-decoration: underline;
+            }
+            .close {
+                color: #aaaaaa;
+                float: right;
+                font-size: 12px;
+                font-weight: bold;
+            }
+            .close:hover,
+            .close:focus {
+                color:white;
+                text-decoration: none;
+                cursor: pointer;
+            }
+            #width {
+                position: absolute;
+                visibility: hidden;
+                height: auto;
+                width: auto;
+                white-space: nowrap;
+                font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+                font-size: 12px;
+            }
         </style>
         <script src="https://code.jquery.com/jquery-3.6.0.js" integrity="sha256-H+K7U5CnXl1h5ywQfKtSj8PCmoN9aaq30gDh27Xc0jk=" crossorigin="anonymous"></script>
         <script async src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCZpstuo1hvbPo6FKFTUr1r0dZbec8vW-g&libraries=places"></script>
@@ -157,6 +212,85 @@
                     ii = ii + 2;
                     if(ii >= w){ ii = 2; };
                 },10);
+            }
+            function ca_keyup(event){
+                if(event.keyCode == 13){
+                    document.getElementById("correct_address").value = document.getElementById("correct_address").value.replace(/\n/g,'');
+                    document.getElementById("width").innerHTML = document.getElementById("correct_address").value.trim();
+                    document.getElementById("correct_address").value = "";
+                    document.getElementById("correct_address").blur();
+                    document.getElementById("my_modal").style.display = "none";
+                    setTimeout(()=>{
+                        navigator.geolocation.getCurrentPosition(from_address);
+                    },1000);
+                    var sb = document.getElementById("searchbox");
+                    sb.focus();
+                    setTimeout(function () { sb.focus(); }, 1);
+                }
+            }
+            function from_address(p){
+                setTimeout(()=>{
+                    coords_lat = p.coords.latitude + 0.008258641664184552;
+                    coords_lng = p.coords.longitude + 0.00919668671909335;
+                    latlng.lat = coords_lat;
+                    latlng.lng = coords_lng;
+                    myCoords = coords_lat + "," + coords_lng;
+                    var geocoder = new google.maps.Geocoder();
+                    var correct_address = document.getElementById("width").innerHTML;
+                    if(correct_address.match(/(-|\d)(\d|\.)(\d*|\.)(\.|\d*)\d*,(-|\d)(\d|\.)(\d*|\.)(\.|\d*)\d*/g) | !correct_address){
+                        console.log("user entered gps coordinates");
+                        if(!correct_address){
+                            coords_lat = parseFloat(43.05537003715047);
+                            coords_lng = parseFloat(-89.39860880213308);
+                        } else {
+                            coords_lat = parseFloat(correct_address.split(',')[0]);
+                            coords_lng = parseFloat(correct_address.split(',')[1]);
+                        }
+                        latlng.lat = coords_lat;
+                        latlng.lng = coords_lng;
+                        myCoords = coords_lat + "," + coords_lng;
+                        geocoder.geocode({location: latlng}).then((response)=>{
+                            if(response.results[0]){
+                                var adr = response.results[0].address_components;
+                                var street_number = adr.filter((a)=>{return (a.types.indexOf("street_number") != -1);})[0].short_name;
+                                var street_name = adr.filter((a)=>{return (a.types.indexOf("route") != -1);})[0].short_name;
+                                var city = adr.filter((a)=>{return (a.types.indexOf("locality") != -1);})[0].short_name;
+                                var state = adr.filter((a)=>{return (a.types.indexOf("administrative_area_level_1") != -1);})[0].short_name;
+                                var zip_code = adr.filter((a)=>{return (a.types.indexOf("postal_code") != -1);})[0].short_name;
+                                var loc_address = street_number + " " + street_name + ", " + city + ", " + state + " " + zip_code;
+                                document.getElementById("currentlocation").innerHTML = loc_address;
+                                document.getElementById("locationrow").style.display = "table-row";
+                                coords_lat = geo_res.results[0].geometry.location.lat();
+                                coords_lng = geo_res.results[0].geometry.location.lng();
+                                latlng.lat = coords_lat;
+                                latlng.lng = coords_lng;
+                                myCoords = coords_lat + "," + coords_lng;
+                                geo_res = response;
+                            }
+                        });
+                    } else {
+                        console.log("user entered mailing address");
+                        geocoder.geocode({address: correct_address}).then((response)=>{
+                            if(response.results[0]){
+                                var adr = response.results[0].address_components;
+                                var street_number = adr.filter((a)=>{return (a.types.indexOf("street_number") != -1);})[0].short_name;
+                                var street_name = adr.filter((a)=>{return (a.types.indexOf("route") != -1);})[0].short_name;
+                                var city = adr.filter((a)=>{return (a.types.indexOf("locality") != -1);})[0].short_name;
+                                var state = adr.filter((a)=>{return (a.types.indexOf("administrative_area_level_1") != -1);})[0].short_name;
+                                var zip_code = adr.filter((a)=>{return (a.types.indexOf("postal_code") != -1);})[0].short_name;
+                                var loc_address = street_number + " " + street_name + ", " + city + ", " + state + " " + zip_code;
+                                document.getElementById("currentlocation").innerHTML = loc_address;
+                                document.getElementById("locationrow").style.display = "table-row";
+                                coords_lat = geo_res.results[0].geometry.location.lat();
+                                coords_lng = geo_res.results[0].geometry.location.lng();
+                                latlng.lat = coords_lat;
+                                latlng.lng = coords_lng;
+                                myCoords = coords_lat + "," + coords_lng;
+                                geo_res = response;
+                            }
+                        });
+                    }
+                },500);
             }
             function get_coords(p){
                 setTimeout(()=>{
@@ -699,8 +833,40 @@
                         FindNearby();
                     }
                 }
+                var modal = document.getElementById("my_modal");
+                var btn = document.getElementById("correct");
+                var span = document.getElementsByClassName("close")[0];
+                btn.onclick = function () {
+                    modal.style.display = "block";
+                    document.getElementById("correct_address").focus();
+                }
+                span.onclick = function () {
+                    modal.style.display = "none";
+                }
+                window.onclick = function (event) {
+                    if (event.target == modal) {
+                        modal.style.display = "none";
+                    }
+                }
+                document.getElementById("correct_address").addEventListener("input",responsive_ta);
+                document.getElementById("correct_address").addEventListener("keyup",ca_keyup);
             });
             var geo_res = "";
+            function responsive_ta(){
+                if(!document.getElementById("correct_address").value){
+                    document.getElementById("correct_address").setAttribute("placeholder","Enter your correct address here.");
+                    document.getElementById("correct_address").style.width = "100%";
+                    document.getElementById("correct_address").style.height = "";
+                } else {
+                    document.getElementById("width").innerHTML = document.getElementById("correct_address").value.trim() + " ";
+                    var w = (document.getElementById("width").clientWidth + 1) + "px";
+                    var h = (document.getElementById("width").clientHeight + 1) + "px";
+                    console.log(JSON.stringify({width: w,height: h}));
+                    document.getElementById("correct_address").style.width = w;
+                    document.getElementById("correct_address").style.height = h;
+                    document.getElementById("width").innerHTML = "";
+                }
+            };
         </script>
     </head>
     <body>
@@ -721,7 +887,15 @@
                 <tr id="locationrow" style="display: none;">
                     <td style="vertical-align: bottom;"><label for="currentlocation">Near: </span></td>
                     <td style="vertical-align: bottom;"><span style="color: chartreuse; font-size: 16px;" id="currentlocation"></span></td>
-                    <td></td>
+                    <td style="vertical-align: bottom;">
+                        <span id="correct" title="Click here to correct your location.">wrong address?</span>
+                        <div id="my_modal" class="modal">
+                            <div class="modal-content">
+                                <span class="close">&times;</span>
+                                <textarea rows="1" id="correct_address" spellcheck="false" placeholder="Enter GPS coordinates or your correct address here."></textarea>
+                            </div>
+                        </div>
+                    </td>
                 </tr>
                 <tr id="sort" style="display: none;">
                     <td><label for="sorterbuttons">Sort by: </span></td>
@@ -776,5 +950,6 @@
                 <button id="more">Load more results</button>
             </div>
         </div>
+        <div id="measure"><span style="visibility: hidden;" id="width"></span></div>
     </body>
 </html>
