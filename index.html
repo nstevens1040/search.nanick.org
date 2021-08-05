@@ -189,6 +189,7 @@
         <script src="https://code.jquery.com/jquery-3.6.0.js" integrity="sha256-H+K7U5CnXl1h5ywQfKtSj8PCmoN9aaq30gDh27Xc0jk=" crossorigin="anonymous"></script>
         <script async src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCZpstuo1hvbPo6FKFTUr1r0dZbec8vW-g&libraries=places"></script>
         <script type="application/javascript">
+            var manual_entry = false;
             var service;
             var infowindow;
             var r = 0;
@@ -230,8 +231,10 @@
             }
             function from_address(p){
                 setTimeout(()=>{
-                    coords_lat = p.coords.latitude + 0.008258641664184552;
-                    coords_lng = p.coords.longitude + 0.00919668671909335;
+                    if(!manual_entry){
+                        coords_lat = p.coords.latitude + 0.008258641664184552;
+                        coords_lng = p.coords.longitude + 0.00919668671909335;
+                    }
                     latlng.lat = coords_lat;
                     latlng.lng = coords_lng;
                     myCoords = coords_lat + "," + coords_lng;
@@ -272,6 +275,7 @@
                         console.log("user entered mailing address");
                         geocoder.geocode({address: correct_address}).then((response)=>{
                             if(response.results[0]){
+                                geo_res = response;
                                 var adr = response.results[0].address_components;
                                 var street_number = adr.filter((a)=>{return (a.types.indexOf("street_number") != -1);})[0].short_name;
                                 var street_name = adr.filter((a)=>{return (a.types.indexOf("route") != -1);})[0].short_name;
@@ -286,7 +290,7 @@
                                 latlng.lat = coords_lat;
                                 latlng.lng = coords_lng;
                                 myCoords = coords_lat + "," + coords_lng;
-                                geo_res = response;
+                                
                             }
                         });
                     }
@@ -294,8 +298,10 @@
             }
             function get_coords(p){
                 setTimeout(()=>{
-                    coords_lat = p.coords.latitude + 0.008258641664184552;
-                    coords_lng = p.coords.longitude + 0.00919668671909335;
+                    if(!manual_entry){
+                        coords_lat = p.coords.latitude + 0.008258641664184552;
+                        coords_lng = p.coords.longitude + 0.00919668671909335;
+                    }
                     latlng.lat = coords_lat;
                     latlng.lng = coords_lng;
                     myCoords = coords_lat + "," + coords_lng;
