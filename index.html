@@ -245,13 +245,13 @@
                     var geocoder = new google.maps.Geocoder();
                     //if(correct_address.match(/(-|\d)(\d|\.)(\d*|\.)(\.|\d*)\d*,(-|\d)(\d|\.)(\d*|\.)(\.|\d*)\d*/g) | !correct_address){
                     console.log("user entered gps coordinates");
-                    if(!correct_address){
-                        coords_lat = parseFloat(43.05537003715047);
-                        coords_lng = parseFloat(-89.39860880213308);
-                    } else {
+                    // if(!correct_address){
+                    //     coords_lat = parseFloat(43.05537003715047);
+                    //     coords_lng = parseFloat(-89.39860880213308);
+                    // } else {
                         coords_lat = parseFloat(correct_address.split(',')[0]);
                         coords_lng = parseFloat(correct_address.split(',')[1]);
-                    }
+                    // }
                     latlng.lat = coords_lat;
                     latlng.lng = coords_lng;
                     myCoords = coords_lat + "," + coords_lng;
