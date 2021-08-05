@@ -230,6 +230,7 @@
                     setTimeout(function () { sb.focus(); }, 1);
                 }
             }
+            var corrent_address;
             function from_address(p){
                 setTimeout(()=>{
                     if(!manual_entry){
@@ -239,7 +240,7 @@
                         latlng.lng = coords_lng;
                         myCoords = coords_lat + "," + coords_lng;
                     } else {
-                        var correct_address = document.getElementById("width").innerHTML;
+                        correct_address = document.getElementById("width").innerHTML;
                     }
                     var geocoder = new google.maps.Geocoder();
                     //if(correct_address.match(/(-|\d)(\d|\.)(\d*|\.)(\.|\d*)\d*,(-|\d)(\d|\.)(\d*|\.)(\.|\d*)\d*/g) | !correct_address){
