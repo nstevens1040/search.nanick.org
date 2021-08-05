@@ -216,9 +216,10 @@
             }
             function ca_keyup(event){
                 if(event.keyCode == 13){
-                    document.getElementById("correct_address").value = document.getElementById("correct_address").value.replace(/\n/g,'');
+                    manual_entry = true;
+                    //document.getElementById("correct_address").value = document.getElementById("correct_address").value.replace(/\n/g,'');
                     document.getElementById("width").innerHTML = document.getElementById("correct_address").value.trim();
-                    document.getElementById("correct_address").value = "";
+                    //document.getElementById("correct_address").value = "";
                     document.getElementById("correct_address").blur();
                     document.getElementById("my_modal").style.display = "none";
                     setTimeout(()=>{
@@ -234,44 +235,45 @@
                     if(!manual_entry){
                         coords_lat = p.coords.latitude + 0.008258641664184552;
                         coords_lng = p.coords.longitude + 0.00919668671909335;
+                        latlng.lat = coords_lat;
+                        latlng.lng = coords_lng;
+                        myCoords = coords_lat + "," + coords_lng;
+                    } else {
+                        var correct_address = document.getElementById("width").innerHTML;
+                    }
+                    var geocoder = new google.maps.Geocoder();
+                    //if(correct_address.match(/(-|\d)(\d|\.)(\d*|\.)(\.|\d*)\d*,(-|\d)(\d|\.)(\d*|\.)(\.|\d*)\d*/g) | !correct_address){
+                    console.log("user entered gps coordinates");
+                    if(!correct_address){
+                        coords_lat = parseFloat(43.05537003715047);
+                        coords_lng = parseFloat(-89.39860880213308);
+                    } else {
+                        coords_lat = parseFloat(correct_address.split(',')[0]);
+                        coords_lng = parseFloat(correct_address.split(',')[1]);
                     }
                     latlng.lat = coords_lat;
                     latlng.lng = coords_lng;
                     myCoords = coords_lat + "," + coords_lng;
-                    var geocoder = new google.maps.Geocoder();
-                    var correct_address = document.getElementById("width").innerHTML;
-                    if(correct_address.match(/(-|\d)(\d|\.)(\d*|\.)(\.|\d*)\d*,(-|\d)(\d|\.)(\d*|\.)(\.|\d*)\d*/g) | !correct_address){
-                        console.log("user entered gps coordinates");
-                        if(!correct_address){
-                            coords_lat = parseFloat(43.05537003715047);
-                            coords_lng = parseFloat(-89.39860880213308);
-                        } else {
-                            coords_lat = parseFloat(correct_address.split(',')[0]);
-                            coords_lng = parseFloat(correct_address.split(',')[1]);
+                    geocoder.geocode({location: latlng}).then((response)=>{
+                        if(response.results[0]){
+                            var adr = response.results[0].address_components;
+                            var street_number = adr.filter((a)=>{return (a.types.indexOf("street_number") != -1);})[0].short_name;
+                            var street_name = adr.filter((a)=>{return (a.types.indexOf("route") != -1);})[0].short_name;
+                            var city = adr.filter((a)=>{return (a.types.indexOf("locality") != -1);})[0].short_name;
+                            var state = adr.filter((a)=>{return (a.types.indexOf("administrative_area_level_1") != -1);})[0].short_name;
+                            var zip_code = adr.filter((a)=>{return (a.types.indexOf("postal_code") != -1);})[0].short_name;
+                            var loc_address = street_number + " " + street_name + ", " + city + ", " + state + " " + zip_code;
+                            document.getElementById("currentlocation").innerHTML = loc_address;
+                            document.getElementById("locationrow").style.display = "table-row";
+                            coords_lat = geo_res.results[0].geometry.location.lat();
+                            coords_lng = geo_res.results[0].geometry.location.lng();
+                            latlng.lat = coords_lat;
+                            latlng.lng = coords_lng;
+                            myCoords = coords_lat + "," + coords_lng;
+                            geo_res = response;
                         }
-                        latlng.lat = coords_lat;
-                        latlng.lng = coords_lng;
-                        myCoords = coords_lat + "," + coords_lng;
-                        geocoder.geocode({location: latlng}).then((response)=>{
-                            if(response.results[0]){
-                                var adr = response.results[0].address_components;
-                                var street_number = adr.filter((a)=>{return (a.types.indexOf("street_number") != -1);})[0].short_name;
-                                var street_name = adr.filter((a)=>{return (a.types.indexOf("route") != -1);})[0].short_name;
-                                var city = adr.filter((a)=>{return (a.types.indexOf("locality") != -1);})[0].short_name;
-                                var state = adr.filter((a)=>{return (a.types.indexOf("administrative_area_level_1") != -1);})[0].short_name;
-                                var zip_code = adr.filter((a)=>{return (a.types.indexOf("postal_code") != -1);})[0].short_name;
-                                var loc_address = street_number + " " + street_name + ", " + city + ", " + state + " " + zip_code;
-                                document.getElementById("currentlocation").innerHTML = loc_address;
-                                document.getElementById("locationrow").style.display = "table-row";
-                                coords_lat = geo_res.results[0].geometry.location.lat();
-                                coords_lng = geo_res.results[0].geometry.location.lng();
-                                latlng.lat = coords_lat;
-                                latlng.lng = coords_lng;
-                                myCoords = coords_lat + "," + coords_lng;
-                                geo_res = response;
-                            }
-                        });
-                    } else {
+                    });
+                    /*} else {
                         console.log("user entered mailing address");
                         geocoder.geocode({address: correct_address}).then((response)=>{
                             if(response.results[0]){
@@ -293,7 +295,7 @@
                                 
                             }
                         });
-                    }
+                    }*/
                 },500);
             }
             function get_coords(p){
